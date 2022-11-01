@@ -15,11 +15,23 @@ def user_input():
 
     n = 6  # number of input_list elements
     input_list = list(map(float, input("Enter lat,lon,width,height,resolution,scalefactor: ").strip().split(',')))[:n]
+
     bbox = [input_list[1] - (input_list[2] / 50000), input_list[0] - (input_list[3] / 50000), input_list[1] + (input_list[2] / 50000), input_list[0] + (input_list[3] / 50000)]
     bbox2string = ','.join(str(i) for i in bbox)
 
-    #print(f'[INFO]: Data entered: {input_list}')
-
+def dev_input():
+    global bbox2string, input_list
+    # Static Geiranger for dev
+    input_list = [0] * 6
+    input_list[0] = 62.119509 # Lat
+    input_list[1] = 7.148309  # Lon
+    input_list[2] = 15000     # Width
+    input_list[3] = 15000     # Height
+    input_list[4] = 500       # Res
+    input_list[5] = 0.5       # Scale/himalaya
+    bbox = [input_list[1] - (input_list[2] / 50000), input_list[0] - (input_list[3] / 50000),
+            input_list[1] + (input_list[2] / 50000), input_list[0] + (input_list[3] / 50000)]
+    bbox2string = ','.join(str(i) for i in bbox)
 
 def calculate_width_height():
     global width, height
@@ -48,7 +60,7 @@ def main():
                   'FORMAT': 'image/png',
                   'STYLES': 'default',
                   'LAYERS': 'DOM:None',
-                  'CRS': 'CRS:84',          #Geoedic system to enter google map coordinates in decimal degrees
+                  'CRS': 'CRS:84',          # Geoedic system to enter google map coordinates in decimal degrees
                   'BBOX': str(bbox2string),
                   'WIDTH': str(width),
                   'HEIGHT': str(height)}
@@ -67,7 +79,7 @@ def main():
     # Could do something with numpy here.
     npy_img = np.asarray(bin_img)
     npy2_img = Image.fromarray(np.uint8(npy_img))
-    npy2_img.show()
+    #npy2_img.show()
 
 
     # Preallocate empty array with the size of the image
@@ -89,8 +101,12 @@ def main():
     for y, row in enumerate(np_img):
         for x, column in enumerate(row):
             height_data_z[x,y] = column[0] * scale # Populate the z array with the value of the red color in the pixel of that row and column (only one color is needed as R=G=B)
-            height_data_y[x,y] = int(x)            # Populate the x array with the x index of the z value stored in height_data_z
-            height_data_x[x,y] = int(y)            # Populate the y array with the y index of the z value stored in height_data_z
+            height_data_x[x,y] = int(x)            # Populate the x array with the x index of the z value stored in height_data_z
+            height_data_y[x,y] = int(y)            # Populate the y array with the y index of the z value stored in height_data_z
+
+    # Invert x and y arrays so that the image shows the correct view (If this is not done, the image will be inverted when compared to the actual map).
+    height_data_x = height_data_x[::-1]
+    height_data_y = height_data_y[::-1]
 
     # Add xyz coordinates into a single array (so that height_data_3d represents the (x, y, z) value of all the data points
     height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
@@ -118,4 +134,7 @@ def main():
         plotter.show(screenshot='topography.png')
 
 if __name__ == "__main__":
+    #user_input()
+    dev_input()
+    calculate_width_height()
     main()
