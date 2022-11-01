@@ -31,7 +31,7 @@ class GetWMS:
 
         print("----------MAP TO 3D-PRINT-MODEL----------")
         print(
-            "This program converts a terrain model of a chosen \nnorwegian geographic area to a .stl file for 3d printing\n")
+            "This program converts a terrain model of a chosen \nnorwegian geographic area to a .stl_generator file for 3d printing\n")
         print(
             "1. First go to Google Maps and find the center point of \nan area in Norway you want to print a height model of.")
         print("2. Then enter the coordinates, the size of area in meters,\nresolution in pixels and a scaling factor.")
@@ -153,6 +153,7 @@ class GetWMS:
         height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
 
         self.height_data = height_data_z
+        print(height_data_z)
 
         if self.debug:
             print(height_data_3d)
@@ -163,7 +164,7 @@ class GetWMS:
             print("[INFO]: Calculated point cloud, starting Delaunay triangulation...")
             # Generate PyVista point cloud
             cloud = pv.PolyData(height_data_3d)
-            #cloud.plot(point_size=1)
+           # cloud.plot(point_size=1)
 
             # Apply Delaunay triangulation to connect points into surfaces
             surf = cloud.delaunay_2d()
@@ -186,9 +187,9 @@ class GetWMS:
         return self.height_data
 
 if __name__ == "__main__":
-    wms = GetWMS(debug=True, visualize=True) # Create wms object
+    wms = GetWMS(debug=True, visualize=False) # Create wms object
     wms.dev_input() # Add the development input (Geiranger lat lon)
     wms.calculate_width_height() # Calculate the width and height of resulting image TODO: Could be a private function to be called inside class
     wms.calculate_height_data() # Calculate the height data
-    print(wms.get_height_data()) # Get the calculated height data for further use in stl generator
+    print(wms.get_height_data()) # Get the calculated height data for further use in stl_generator generator
 
