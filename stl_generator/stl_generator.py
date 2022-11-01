@@ -33,7 +33,12 @@ class StlGenerator:
 
         # xx vertices
         xx_vertices = self.height_data[0, :height]
-        #print(xx_vertices)
+        # The different unknown vertices
+        #[0,: height]
+        #[: width, 0] = yy
+        #[width - 1,: height]
+        #[: width, height - 1]
+
         # xy vertices
 
         # yy vertices
