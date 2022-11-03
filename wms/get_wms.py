@@ -54,16 +54,19 @@ class GetWMS:
         """
         global bbox2string, input_list
         # Static Geiranger for dev
+        deg2meter_list = [40000*2, 90000*2]
         input_list = [0] * 6       # 6x1 array of 0's
         input_list[0] = 62.119509  # Lat
-        input_list[1] = 7.148309   # Lon
-        input_list[2] = 15000      # Width
-        input_list[3] = 15000      # Height
+        input_list[1] = 7.148389   # Lon
+        input_list[2] = 10000      # Width
+        input_list[3] = 10000      # Height
         input_list[4] = 500        # Res
-        input_list[5] = 0.5        # Scale/himalaya
-        bbox = [input_list[1] - (input_list[2] / 50000), input_list[0] - (input_list[3] / 50000),
-                input_list[1] + (input_list[2] / 50000), input_list[0] + (input_list[3] / 50000)]
+        input_list[5] = 0.3        # Scale/himalaya
+        bbox = [input_list[1] - (input_list[2] / deg2meter_list[0]), input_list[0] - (input_list[3] / deg2meter_list[1]),
+                input_list[1] + (input_list[2] / deg2meter_list[0]), input_list[0] + (input_list[3] / deg2meter_list[1])]
         bbox2string = ','.join(str(i) for i in bbox)
+
+
 
     def calculate_width_height(self):
         """
@@ -111,9 +114,9 @@ class GetWMS:
 
         # TODO: the code commented out below is not necessary. Or could be moved to debugging if statement
         #print("[INFO]: Showing surface model image...")
-        #npy_img = np.asarray(bin_img)
-        #npy2_img = Image.fromarray(np.uint8(npy_img))
-        #npy2_img.show()
+        npy_img = np.asarray(bin_img)
+        npy2_img = Image.fromarray(np.uint8(npy_img))
+        npy2_img.show()
 
         return np_img
 
@@ -187,9 +190,9 @@ class GetWMS:
         return self.height_data
 
 if __name__ == "__main__":
-    wms = GetWMS(debug=True, visualize=False) # Create wms object
+    #wms = GetWMS(debug=True, visualize=False) # Create wms object
     wms.dev_input() # Add the development input (Geiranger lat lon)
     wms.calculate_width_height() # Calculate the width and height of resulting image TODO: Could be a private function to be called inside class
     wms.calculate_height_data() # Calculate the height data
     print(wms.get_height_data()) # Get the calculated height data for further use in stl_generator generator
-
+    wms.user_input()

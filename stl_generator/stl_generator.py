@@ -1,4 +1,4 @@
-from stl import mesh
+#import stl
 import threading
 import numpy as np
 import pyvista as pv
@@ -45,9 +45,7 @@ class StlGenerator:
 
         # yx vertices
 
-        chart = pv.Chart2D()
-        chart.plot(xx_vertices)
-        chart.show()
+        #
 
     #def generate_stl(self, filename):
         #stl_mesh = mesh.Mesh(self.height_data)
