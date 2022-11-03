@@ -6,7 +6,6 @@ if __name__ == "__main__":
     wms.dev_input() # Provide developer data input
     wms.calculate_width_height() # Calculate width and height of image
     wms.calculate_height_data() # Calculate the height data for the chosen geographical area
-    print(wms.get_height_data())
     stl = StlGenerator(wms.get_height_data()) # stl generator object
     stl.find_all_vertices()
 

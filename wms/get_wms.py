@@ -153,7 +153,6 @@ class GetWMS:
         height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
 
         self.height_data = height_data_z
-        print(height_data_z)
 
         if self.debug:
             print(height_data_3d)
@@ -176,6 +175,12 @@ class GetWMS:
             # Add the mesh to the plotter
             #plotter.add_points(height_data_3d, point_size=10, color='orange')
             plotter.add_mesh(surf, color='white')
+            _ = plotter.add_mesh(pv.Sphere(center=(2, 0, 0)), color='r')
+            _ = plotter.add_mesh(pv.Sphere(center=(0, 2, 0)), color='g')
+            _ = plotter.add_mesh(pv.Sphere(center=(0, 0, 2)), color='b')
+            _ = plotter.add_mesh(pv.Sphere(radius=10, center=(0, 0, 43.5)), color='b')
+            _ = plotter.add_mesh(pv.Sphere(radius=10, center=(500, 500, 72.5)), color='r')
+            _ = plotter.add_axes_at_origin()
             # Show the plot in window
             plotter.show(screenshot='topography.png')
 
