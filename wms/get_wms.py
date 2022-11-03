@@ -151,6 +151,7 @@ class GetWMS:
 
         # Add xyz coordinates into a single array (so that height_data_3d represents the (x, y, z) value of all the data points
         height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
+        bottom_surf_pts = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)*0-10]
 
         self.height_data = height_data_z
 
@@ -162,11 +163,14 @@ class GetWMS:
         if(self.visualize):
             print("[INFO]: Calculated point cloud, starting Delaunay triangulation...")
             # Generate PyVista point cloud
-            cloud = pv.PolyData(height_data_3d)
+            top_surf = pv.PolyData(height_data_3d)
+            bottom_surf = pv.PolyData(bottom_surf_pts)
+
            # cloud.plot(point_size=1)
 
             # Apply Delaunay triangulation to connect points into surfaces
-            surf = cloud.delaunay_2d()
+            surf = top_surf.delaunay_2d()
+            surf2 = bottom_surf.delaunay_2d()
 
             print("[INFO]: Showing result...")
 
@@ -175,6 +179,7 @@ class GetWMS:
             # Add the mesh to the plotter
             #plotter.add_points(height_data_3d, point_size=10, color='orange')
             plotter.add_mesh(surf, color='white')
+            plotter.add_mesh(surf2, color='white')
             _ = plotter.add_mesh(pv.Sphere(center=(2, 0, 0)), color='r')
             _ = plotter.add_mesh(pv.Sphere(center=(0, 2, 0)), color='g')
             _ = plotter.add_mesh(pv.Sphere(center=(0, 0, 2)), color='b')
