@@ -202,4 +202,3 @@ if __name__ == "__main__":
     wms.calculate_width_height() # Calculate the width and height of resulting image TODO: Could be a private function to be called inside class
     wms.calculate_height_data() # Calculate the height data
     print(wms.get_height_data()) # Get the calculated height data for further use in stl_generator generator
-
