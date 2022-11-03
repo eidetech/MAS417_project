@@ -12,5 +12,4 @@ if __name__ == "__main__":
     stl.create_top_mesh()
     stl.create_bottom_mesh()
     stl.combine_meshes()
-
-    #stl.generate_stl(filename="geiranger.stl") # Generate the finished .stl file
+    stl.generate_stl(filename="geiranger.stl") # Generate the finished .stl file

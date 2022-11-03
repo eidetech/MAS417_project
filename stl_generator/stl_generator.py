@@ -12,27 +12,28 @@ class StlGenerator:
 
     def find_all_vertices(self):
         """
-        Function for finding and storing vertices of all faces of the STL: top, bottom, and four sides
-        :return: Nothing
+        Function for finding and storing vertices of all faces of the STL: top, bottom, and four sides.
+        With some optional graphing used for understanding the orientation of each face.
         """
         # Calculate width and height of height_data array
         self.width = len(self.height_data)
         self.height = len(self.height_data[0])
-        array_size = np.zeros(self.width * self.height)
+        #array_size = np.zeros(self.width * self.height)
 
+        # Initialize arrays for storing vertices
         self.top_vertices = [0] * self.height * self.width
         self.grid_2d = [0] * self.height * self.width
         self.bottom_vertices = [0] * self.height * self.width
-        self.xx_vertices = [0] * self.height * self.width
-        self.xy_vertices = [0] * self.height * self.width
-        self.yy_vertices = [0] * self.height * self.width
-        self.yx_vertices = [0] * self.height * self.width
+        self.xx_vertices_top = [0] * self.height * self.width
+        self.xy_vertices_top = [0] * self.height * self.width
+        self.yy_vertices_top = [0] * self.height * self.width
+        self.yx_vertices_top = [0] * self.height * self.width
 
         # Top vertices (which is the actual height data points)
         idx = 0
         for y, row in enumerate(self.height_data):
             for x, column in enumerate(row):
-                self.top_vertices[idx] = [x,y,self.height_data[x,y]]
+                self.top_vertices[idx] = [x,y,self.height_data[x,y]] # Create an array containing [x,y,z] coordinate for the top vertices
                 self.grid_2d[idx] = [x, y]
                 idx+=1
 
@@ -40,31 +41,32 @@ class StlGenerator:
         idx = 0
         for y, row in enumerate(self.height_data):
             for x, column in enumerate(row):
-                self.bottom_vertices[idx] = [x,y, -self.thickness]
+                self.bottom_vertices[idx] = [x,y, -self.thickness] # Create an array containing [x,y,z] coordinate for the bottom vertices
                 idx+=1
 
         # yy vertices
-        self.yy_vertices = self.height_data[self.width - 1,:self.height]
+        self.yy_vertices_top = self.height_data[self.width - 1, :self.height]
+
         # yx vertices
-        self.yx_vertices = self.height_data[:self.width, self.height - 1]
+        self.yx_vertices_top = self.height_data[:self.width, self.height - 1]
         # xx vertices
-        self.xx_vertices = self.height_data[:self.width, 0]
-        self.xx_vertices = self.xx_vertices[::-1] # TODO: Not sure why I have to reverse the order of this list, could probably select indexes in a smarter way
+        self.xx_vertices_top = self.height_data[:self.width, 0]
+        self.xx_vertices_top = self.xx_vertices_top[::-1] # TODO: Not sure why I have to reverse the order of this list, could probably select indexes in a smarter way
         # xy vertices
-        self.xy_vertices = self.height_data[0,:self.height]
+        self.xy_vertices_top = self.height_data[0, :self.height]
 
         if self.graph:
             xxplot = pv.Chart2D()
-            xxplot.plot(self.xx_vertices)
+            xxplot.plot(self.xx_vertices_top)
 
             xyplot = pv.Chart2D()
-            xyplot.plot(self.xy_vertices)
+            xyplot.plot(self.xy_vertices_top)
 
             yxplot = pv.Chart2D()
-            yxplot.plot(self.yx_vertices)
+            yxplot.plot(self.yx_vertices_top)
 
             yyplot = pv.Chart2D()
-            yyplot.plot(self.yy_vertices)
+            yyplot.plot(self.yy_vertices_top)
 
             pl = pv.Plotter(shape=(2, 2))
             pl.subplot(0, 0)
@@ -86,24 +88,41 @@ class StlGenerator:
             pl.show()
 
     def create_top_mesh(self):
-        self.top_faces = Delaunay(self.grid_2d).simplices
+        """
+        Create the top mesh based on top vertices. Creating faces using the 2D grid which consists of [x,y] points for
+        the z values. Then updating the mesh vectors with the z value from the top vertices array.
+        """
+        self.top_faces = Delaunay(self.grid_2d).simplices # Simplices returns an array containing triangles from the triangulation
         self.top_mesh = mesh.Mesh(np.zeros(self.top_faces.shape[0], dtype=mesh.Mesh.dtype))
         for i, f in enumerate(self.top_faces):
             for j in range(3):
                 self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
         self.top_mesh.save('top_mesh.stl')
     def create_bottom_mesh(self):
-        self.bottom_faces = Delaunay(self.grid_2d).simplices
+        """
+        Create the bottom mesh based on bottom vertices. Creating faces using the 2D grid which consists of [x,y] points for
+        the z values. Then updating the mesh vectors with the z value from the top vertices array.
+        """
+        self.bottom_faces = Delaunay(self.grid_2d).simplices # Simplices returns an array containing triangles from the triangulation
         self.bottom_mesh = mesh.Mesh(np.zeros(self.bottom_faces.shape[0], dtype=mesh.Mesh.dtype))
         for i, f in enumerate(self.bottom_faces):
             for j in range(3):
                 self.bottom_mesh.vectors[i][j] = self.bottom_vertices[f[j]]
         self.bottom_mesh.save('bottom_mesh.stl')
 
-    def combine_meshes(self):
-        combined = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data]))
-        combined.save('combined.stl')
+    def create_side_meshes(self):
+        # TODO: implement function
+        print("Will create l8er.")
 
-    #def generate_stl(self, filename):
-        #stl_mesh = mesh.Mesh(self.height_data)
-        #stl_mesh.save(filename+'.stl')
+    def combine_meshes(self):
+        """
+        Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
+        """
+        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data]))
+
+    def generate_stl(self, filename):
+        """
+        Generate .stl with provided filename based on the combined mesh.
+        :param filename: Filename for the .stl file
+        """
+        self.combined_mesh.save(filename)
