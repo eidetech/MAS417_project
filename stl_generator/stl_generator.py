@@ -18,23 +18,14 @@ class StlGenerator:
         # Calculate width and height of height_data array
         self.width = len(self.height_data)
         self.height = len(self.height_data[0])
-        #array_size = np.zeros(self.width * self.height)
 
         # Initialize arrays for storing vertices
         self.top_vertices = [0] * self.height * self.width
-        self.grid_2d = [0] * self.height * self.width
-
-        #xx_vertices_top = [0] * self.width # TODO: width or height here?
-        self.xy_vertices_top = [0] * self.width # TODO: width or height here?
-        self.yy_vertices_top = [0] * self.width # TODO: width or height here?
-        self.yx_vertices_top = [0] * self.width # TODO: width or height here?
-        self.xx_side_2d = [0] * 2 * self.height
-        self.xy_side_2d = [0] * self.height * self.width
-        self.yy_side_2d = [0] * self.height * self.width
-        self.yx_side_2d = [0] * self.height * self.width
-
         self.bottom_vertices = [0] * self.height * self.width
-        self.bottom_data = self.height_data * 0 - self.thickness
+        self.grid_2d = [0] * self.height * self.width # Flat 2D grid of all the data points in height_data. Used for Delaunay triangulation of the top/bottom surfaces
+
+        xy_vertices_top = [0] * self.width # TODO: width or height here?
+        yy_vertices_top = [0] * self.width # TODO: width or height here?
 
         # Top vertices (which is the actual height data points)
         idx = 0
@@ -52,33 +43,33 @@ class StlGenerator:
                 idx+=1
 
         # Side vertices
+        # Filling xx, xy, yy, yx arrays with vertex data
         idx = 0
-        for y, row in enumerate(self.height_data):
-            for x, column in enumerate(row):
+        for x, row in enumerate(self.height_data):
+            for y, column in enumerate(row):
                 if(idx < self.width):
-                    self.xy_vertices_top[idx] = [499,x, self.height_data[self.width-1, x]]
-                    self.yy_vertices_top[idx] = [0, x, self.height_data[0, x]]
+                    xy_vertices_top[idx] = [self.width-1, y, self.height_data[self.width-1, y]] # Fixed x of width-1, increasing y and selecting z values from height data with fixed x of width-1 and increasing y
+                    yy_vertices_top[idx] = [0, y, self.height_data[0, y]] # Fixed x of 0, increasing y and selecting z values from height data with fixed x of 0 and increasing y
                 idx+=1
 
-        xx_vertices_top = self.top_vertices[:self.width]
-        xx_vertices_bottom = [[pt[0], 0, -self.thickness] for pt in xx_vertices_top]
+        # Completing xx vertex array
+        xx_vertices_top = self.top_vertices[:self.width] # Fill xx_vertices with the indexes from top_vertices that go along the x axis (fixed y axis of 0)
+        xx_vertices_bottom = [[pt[0], 0, -self.thickness] for pt in xx_vertices_top] # Make bottom array with specified thickness
+        self.xx_vertices = xx_vertices_top + xx_vertices_bottom # Append all bottom indexes to the top array
+        xx_vertices_top = xx_vertices_top[::-1] # Reverse, so that it becomes the correct orientation
 
-        self.xx_vertices = xx_vertices_top + xx_vertices_bottom
+        # Completing xy vertex array
+        xy_vertices_bottom = [[self.width-1, pt[1], -self.thickness] for pt in xy_vertices_top] # Make bottom array with specified thickness
+        self.xy_vertices = xy_vertices_top + xy_vertices_bottom # Append all bottom indexes to the top array
 
-        xx_vertices_top = xx_vertices_top[::-1]
-        self.yx_vertices_top = self.top_vertices[-self.width:]
-
-        self.xx = [idx[2] for idx in xx_vertices_top]
-        # Create 2d vector arrays for sides
-        idx = 0
-        for i in range(0,len(self.xx)):
-            self.xx_side_2d[i] = [i, self.xx[i]]
-            #self.xy_side_2d[idx] = [self.width, y]
-            #self.yy_side_2d[idx] = [0, y]
-            #self.yx_side_2d[idx] = [x, self.height]
-
-        for i in range(self.width, 2*self.width):
-            self.xx_side_2d[i] = [i-self.width, 0]
+        # Completing yy vertex array
+        yy_vertices_bottom = [[0,pt[1], -self.thickness] for pt in yy_vertices_top] # Make bottom array with specified thickness
+        self.yy_vertices = yy_vertices_top + yy_vertices_bottom # Append all bottom indexes to the top array
+        
+        # Completing yx vertex array
+        yx_vertices_top = self.top_vertices[-self.width:]
+        yx_vertices_bottom = [[pt[0], self.width-1, -self.thickness] for pt in yx_vertices_top] # Make bottom array with specified thickness
+        self.yx_vertices = yx_vertices_top + yx_vertices_bottom # Append all bottom indexes to the top array
 
         if self.graph:
             xxplot = pv.Chart2D()
@@ -86,15 +77,15 @@ class StlGenerator:
             xxplot.plot(xx)
 
             xyplot = pv.Chart2D()
-            xy = [idx[2] for idx in self.xy_vertices_top]
+            xy = [idx[2] for idx in xy_vertices_top]
             xyplot.plot(xy)
 
             yxplot = pv.Chart2D()
-            yx = [idx[2] for idx in self.yx_vertices_top]
+            yx = [idx[2] for idx in yx_vertices_top]
             yxplot.plot(yx)
 
             yyplot = pv.Chart2D()
-            yy = [idx[2] for idx in self.yy_vertices_top]
+            yy = [idx[2] for idx in yy_vertices_top]
             yyplot.plot(yy)
 
             pl = pv.Plotter(shape=(2, 2))
@@ -156,15 +147,17 @@ class StlGenerator:
 
         # Create meshes based on the faces created above
         self.xx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
-        #self.xy_mesh = mesh.Mesh(np.zeros(self.yy_faces.shape[0], dtype=mesh.Mesh.dtype))
-        #self.yy_mesh = mesh.Mesh(np.zeros(self.yy_faces.shape[0], dtype=mesh.Mesh.dtype))
-        #self.yx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+        self.xy_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+        self.yy_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+        self.yx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
 
         #
         for i, f in enumerate(self.xx_faces):
             for j in range(3):
                 self.xx_mesh.vectors[i][j] = self.xx_vertices[f[j]]
-                #self.yx_mesh.vectors[i][j] = self.yx_vertices[f[j]]
+                self.yx_mesh.vectors[i][j] = self.yx_vertices[f[j]]
+                self.yy_mesh.vectors[i][j] = self.yy_vertices[f[j]]
+                self.xy_mesh.vectors[i][j] = self.xy_vertices[f[j]]
 
         #for i, f in enumerate(self.yy_faces):
         #    for j in range(3):
@@ -175,8 +168,8 @@ class StlGenerator:
         """
         Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
         """
-        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data, self.xx_mesh.data]))#,
-                                                     #  self.xy_mesh.data, self.yy_mesh.data, self.yx_mesh.data]))
+        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data, self.xx_mesh.data,
+                                                       self.yx_mesh.data, self.xy_mesh.data, self.yy_mesh.data]))
 
     def generate_stl(self, filename):
         """
