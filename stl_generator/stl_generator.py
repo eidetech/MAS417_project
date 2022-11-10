@@ -86,6 +86,7 @@ class StlGenerator:
         yx_vertices_bottom = [[idx[0], self.width-1, -self.thickness] for idx in yx_vertices_top] # Make bottom array with specified thickness
         self.yx_vertices = yx_vertices_top + yx_vertices_bottom # Append all bottom indexes to the top array
 
+        # Optional graphing used for understanding the orientation of each face.
         if self.graph:
             xxplot = pv.Chart2D()
             xx = [idx[2] for idx in xx_vertices_top]
