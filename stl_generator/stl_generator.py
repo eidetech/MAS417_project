@@ -1,5 +1,5 @@
 from stl import mesh
-import threading
+import threading as thr
 import numpy as np
 import pyvista as pv
 from scipy.spatial import Delaunay
@@ -9,6 +9,18 @@ class StlGenerator:
         self.height_data = height_data
         self.thickness = thickness
         self.graph = False # For debugging purposes when naming vertices
+
+        self.mesh_threads = [thr.Thread(target=self.create_top_mesh),
+                             thr.Thread(target=self.create_bottom_mesh),
+                             thr.Thread(target=self.create_side_meshes)]
+
+    def start_mesh_threads(self):
+        for i in range(len(self.mesh_threads)):
+            self.mesh_threads[i].start()
+
+    def stop_mesh_threads(self):
+        for i in range(len(self.mesh_threads)):
+            self.mesh_threads[i].join()
 
     def find_all_vertices(self):
         """
@@ -175,4 +187,8 @@ class StlGenerator:
         Generate .stl with provided filename based on the combined mesh.
         :param filename: Filename for the .stl file
         """
-        self.combined_mesh.save(filename)
+        self.find_all_vertices()         # Find vertices of top, bottom and sides of the model
+        self.start_mesh_threads()         # Start meshing top, bottom and sides
+        self.stop_mesh_threads()          # Stop meshing top, bottom and sides
+        self.combine_meshes()             # Combine the top, bottom and side meshes to one mesh
+        self.combined_mesh.save(filename) # Save the combined mesh into a .stl file with given filename
