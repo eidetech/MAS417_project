@@ -9,8 +9,8 @@ if __name__ == "__main__":
     thickness = 10 # TODO: Should be a parameter for the user to input
     stl = StlGenerator(wms.get_height_data(), thickness) # stl generator object
     stl.find_all_vertices()
-    stl.create_side_meshes()
-    #stl.create_top_mesh()
+    stl.create_top_mesh()
     #stl.create_bottom_mesh()
+    stl.create_side_meshes()
     #stl.combine_meshes()
     #stl.generate_stl(filename="geiranger.stl") # Generate the finished .stl file

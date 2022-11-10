@@ -8,7 +8,7 @@ class StlGenerator:
     def __init__(self, height_data, thickness):
         self.height_data = height_data
         self.thickness = thickness
-        self.graph = True # For debugging purposes
+        self.graph = False # For debugging purposes
 
     def find_all_vertices(self):
         """
@@ -54,16 +54,10 @@ class StlGenerator:
                     self.yy_vertices_top[idx] = [0, x, self.height_data[0, x]]
                 idx+=1
 
-        print(len(self.xy_vertices_top))
-
-        # yy vertices
         self.xx_vertices_top = self.top_vertices[:self.width]
-        #self.yy_vertices_bottom = self.top_vertices[:self.width]
-
-        # xy vertices
+        self.xx_vertices_top = self.xx_vertices_top[::-1]
         self.yx_vertices_top = self.top_vertices[-self.width:]
 
-        #print([idx[2] for idx in self.xy_vertices_top])
         if self.graph:
             xxplot = pv.Chart2D()
             xx = [idx[2] for idx in self.xx_vertices_top]
@@ -124,10 +118,19 @@ class StlGenerator:
         self.bottom_mesh.save('bottom_mesh.stl')
 
     def create_side_meshes(self):
-        print(self.height_data)
+        self.side_face_xx = Delaunay(self.side_xx_2d).simplices
+
+
+
+        #self.top_faces = Delaunay(self.grid_2d).simplices # Simplices returns an array containing triangles from the triangulation
+        #self.top_mesh = mesh.Mesh(np.zeros(self.top_faces.shape[0], dtype=mesh.Mesh.dtype))
+        #for i, f in enumerate(self.top_faces):
+        #    for j in range(3):
+        #        self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
+        #self.top_mesh.save('top_mesh.stl')
 
     def combine_meshes(self):
-        """
+        """3
         Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
         """
         self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data]))
