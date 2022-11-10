@@ -24,7 +24,7 @@ class StlGenerator:
         self.top_vertices = [0] * self.height * self.width
         self.grid_2d = [0] * self.height * self.width
 
-        self.xx_vertices_top = [0] * self.width # TODO: width or height here?
+        #xx_vertices_top = [0] * self.width # TODO: width or height here?
         self.xy_vertices_top = [0] * self.width # TODO: width or height here?
         self.yy_vertices_top = [0] * self.width # TODO: width or height here?
         self.yx_vertices_top = [0] * self.width # TODO: width or height here?
@@ -60,35 +60,29 @@ class StlGenerator:
                     self.yy_vertices_top[idx] = [0, x, self.height_data[0, x]]
                 idx+=1
 
-        self.xx_vertices_top = self.top_vertices[:self.width]
+        xx_vertices_top = self.top_vertices[:self.width]
+        xx_vertices_bottom = [[pt[0], 0, -self.thickness] for pt in xx_vertices_top]
 
-        xx_vertices_bottom = [[pt[0], 0, -self.thickness] for pt in self.xx_vertices_top]
+        self.xx_vertices = xx_vertices_top + xx_vertices_bottom
 
-        self.xx_vertices = self.xx_vertices_top + xx_vertices_bottom
-
-        self.xx_vertices_top = self.xx_vertices_top[::-1]
+        xx_vertices_top = xx_vertices_top[::-1]
         self.yx_vertices_top = self.top_vertices[-self.width:]
 
-        xx = [idx[2] for idx in self.xx_vertices_top]
+        self.xx = [idx[2] for idx in xx_vertices_top]
         # Create 2d vector arrays for sides
         idx = 0
-        for i in range(0,len(xx)):
-            self.xx_side_2d[i] = [i, xx[i]]
+        for i in range(0,len(self.xx)):
+            self.xx_side_2d[i] = [i, self.xx[i]]
             #self.xy_side_2d[idx] = [self.width, y]
             #self.yy_side_2d[idx] = [0, y]
             #self.yx_side_2d[idx] = [x, self.height]
 
-
         for i in range(self.width, 2*self.width):
             self.xx_side_2d[i] = [i-self.width, 0]
 
-        print(self.xx_side_2d)
-        print(len(self.xx_side_2d))
-        print(idx)
-        print(self.xx_vertices_top)
         if self.graph:
             xxplot = pv.Chart2D()
-            xx = [idx[2] for idx in self.xx_vertices_top]
+            xx = [idx[2] for idx in xx_vertices_top]
             xxplot.plot(xx)
 
             xyplot = pv.Chart2D()
@@ -146,28 +140,43 @@ class StlGenerator:
         self.bottom_mesh.save('bottom_mesh.stl')
 
     def create_side_meshes(self):
-        self.xx_faces = Delaunay(self.xx_side_2d).simplices # Simplices returns an array containing triangles from the triangulation
-        print(self.xx_faces)
+        # Create matrices for holding the indexes of the vertices that make up all the triangles
+        self.xx_faces = np.zeros([len(self.xx_vertices), 3], dtype=int) # Array for storing triangles, size = [number of vertices, 3] (row, col)
+        #self.yy_faces = np.zeros([len(self.yy_vertices), 3], dtype=int)
+
+        # Fill matrices with indexes that make up all of the triangles on xx and yy sides (xx is the as yx, and yy is the same as xy)
+        idx = 0
+        for i in range(self.width - 1):
+            self.xx_faces[idx] = [i, i + 1, self.width + i]  # First triangle
+            self.xx_faces[idx + 1] = [i + 1, self.width + i + 1, self.width + i]  # Opposite triangle
+
+            #self.yy_faces[idx] = [i, i + 1, self.width + i]  # First triangle
+            #self.yy_faces[idx + 1] = [i + 1, self.width + i + 1, self.width + i]  # Opposite triangle
+            idx += 2
+
+        # Create meshes based on the faces created above
         self.xx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+        #self.xy_mesh = mesh.Mesh(np.zeros(self.yy_faces.shape[0], dtype=mesh.Mesh.dtype))
+        #self.yy_mesh = mesh.Mesh(np.zeros(self.yy_faces.shape[0], dtype=mesh.Mesh.dtype))
+        #self.yx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+
+        #
         for i, f in enumerate(self.xx_faces):
             for j in range(3):
                 self.xx_mesh.vectors[i][j] = self.xx_vertices[f[j]]
-        self.xx_mesh.save('xx_mesh.stl')
+                #self.yx_mesh.vectors[i][j] = self.yx_vertices[f[j]]
 
-
-
-        #self.top_faces = Delaunay(self.grid_2d).simplices # Simplices returns an array containing triangles from the triangulation
-        #self.top_mesh = mesh.Mesh(np.zeros(self.top_faces.shape[0], dtype=mesh.Mesh.dtype))
-        #for i, f in enumerate(self.top_faces):
+        #for i, f in enumerate(self.yy_faces):
         #    for j in range(3):
-        #        self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
-        #self.top_mesh.save('top_mesh.stl')
+        #        self.yy_mesh.vectors[i][j] = self.yy_vertices[f[j]]
+        #        self.xy_mesh.vectors[i][j] = self.xy_vertices[f[j]]
 
     def combine_meshes(self):
-        """3
+        """
         Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
         """
-        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data, self.xx_mesh.data]))
+        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data, self.xx_mesh.data]))#,
+                                                     #  self.xy_mesh.data, self.yy_mesh.data, self.yx_mesh.data]))
 
     def generate_stl(self, filename):
         """
