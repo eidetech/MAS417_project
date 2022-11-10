@@ -23,11 +23,17 @@ class StlGenerator:
         # Initialize arrays for storing vertices
         self.top_vertices = [0] * self.height * self.width
         self.grid_2d = [0] * self.height * self.width
-        self.bottom_vertices = [0] * self.height * self.width
+
         self.xx_vertices_top = [0] * self.width # TODO: width or height here?
         self.xy_vertices_top = [0] * self.width # TODO: width or height here?
         self.yy_vertices_top = [0] * self.width # TODO: width or height here?
         self.yx_vertices_top = [0] * self.width # TODO: width or height here?
+        self.xx_side_2d = [0] * 2 * self.height
+        self.xy_side_2d = [0] * self.height * self.width
+        self.yy_side_2d = [0] * self.height * self.width
+        self.yx_side_2d = [0] * self.height * self.width
+
+        self.bottom_vertices = [0] * self.height * self.width
         self.bottom_data = self.height_data * 0 - self.thickness
 
         # Top vertices (which is the actual height data points)
@@ -55,9 +61,31 @@ class StlGenerator:
                 idx+=1
 
         self.xx_vertices_top = self.top_vertices[:self.width]
+
+        xx_vertices_bottom = [[pt[0], 0, -self.thickness] for pt in self.xx_vertices_top]
+
+        self.xx_vertices = self.xx_vertices_top + xx_vertices_bottom
+
         self.xx_vertices_top = self.xx_vertices_top[::-1]
         self.yx_vertices_top = self.top_vertices[-self.width:]
 
+        xx = [idx[2] for idx in self.xx_vertices_top]
+        # Create 2d vector arrays for sides
+        idx = 0
+        for i in range(0,len(xx)):
+            self.xx_side_2d[i] = [i, xx[i]]
+            #self.xy_side_2d[idx] = [self.width, y]
+            #self.yy_side_2d[idx] = [0, y]
+            #self.yx_side_2d[idx] = [x, self.height]
+
+
+        for i in range(self.width, 2*self.width):
+            self.xx_side_2d[i] = [i-self.width, 0]
+
+        print(self.xx_side_2d)
+        print(len(self.xx_side_2d))
+        print(idx)
+        print(self.xx_vertices_top)
         if self.graph:
             xxplot = pv.Chart2D()
             xx = [idx[2] for idx in self.xx_vertices_top]
@@ -118,7 +146,13 @@ class StlGenerator:
         self.bottom_mesh.save('bottom_mesh.stl')
 
     def create_side_meshes(self):
-        self.side_face_xx = Delaunay(self.side_xx_2d).simplices
+        self.xx_faces = Delaunay(self.xx_side_2d).simplices # Simplices returns an array containing triangles from the triangulation
+        print(self.xx_faces)
+        self.xx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+        for i, f in enumerate(self.xx_faces):
+            for j in range(3):
+                self.xx_mesh.vectors[i][j] = self.xx_vertices[f[j]]
+        self.xx_mesh.save('xx_mesh.stl')
 
 
 
@@ -133,7 +167,7 @@ class StlGenerator:
         """3
         Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
         """
-        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data]))
+        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data, self.xx_mesh.data]))
 
     def generate_stl(self, filename):
         """

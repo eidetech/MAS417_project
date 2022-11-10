@@ -10,7 +10,7 @@ if __name__ == "__main__":
     stl = StlGenerator(wms.get_height_data(), thickness) # stl generator object
     stl.find_all_vertices()
     stl.create_top_mesh()
-    #stl.create_bottom_mesh()
+    stl.create_bottom_mesh()
     stl.create_side_meshes()
-    #stl.combine_meshes()
-    #stl.generate_stl(filename="geiranger.stl") # Generate the finished .stl file
+    stl.combine_meshes()
+    stl.generate_stl(filename="geiranger.stl") # Generate the finished .stl file
