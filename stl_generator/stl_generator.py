@@ -10,19 +10,22 @@ class StlGenerator:
         self.thickness = thickness
         self.graph = False # For debugging purposes when naming vertices
 
-        self.mesh_threads = [thr.Thread(target=self.create_top_mesh),
-                             thr.Thread(target=self.create_bottom_mesh),
-                             thr.Thread(target=self.create_side_meshes)]
+        # Create a thread for each of the meshing processes
+        self.mesh_threads = [thr.Thread(target=self.__create_top_mesh),
+                             thr.Thread(target=self.__create_bottom_mesh),
+                             thr.Thread(target=self.__create_side_meshes)]
 
-    def start_mesh_threads(self):
+    # Function for starting all the meshing threads
+    def __start_mesh_threads(self):
         for i in range(len(self.mesh_threads)):
             self.mesh_threads[i].start()
 
-    def stop_mesh_threads(self):
+    # Function for stopping all the threads
+    def __stop_mesh_threads(self):
         for i in range(len(self.mesh_threads)):
             self.mesh_threads[i].join()
 
-    def find_all_vertices(self):
+    def __find_all_vertices(self):
         """
         Function for finding and storing vertices of all faces of the STL: top, bottom, and four sides.
         With some optional graphing used for understanding the orientation of each face.
@@ -122,7 +125,7 @@ class StlGenerator:
             pl.set_background('white', all_renderers=False)
             pl.show()
 
-    def create_top_mesh(self):
+    def __create_top_mesh(self):
         """
         Create the top mesh based on top vertices. Creating faces using the 2D grid which consists of [x,y] points for
         the z values. Then updating the mesh vectors with the z value from the top vertices array.
@@ -133,7 +136,7 @@ class StlGenerator:
             for j in range(3):
                 self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
         self.top_mesh.save('top_mesh.stl')
-    def create_bottom_mesh(self):
+    def __create_bottom_mesh(self):
         """
         Create the bottom mesh based on bottom vertices. Creating faces using the 2D grid which consists of [x,y] points for
         the z values. Then updating the mesh vectors with the z value from the top vertices array.
@@ -145,7 +148,7 @@ class StlGenerator:
                 self.bottom_mesh.vectors[i][j] = self.bottom_vertices[f[j]]
         self.bottom_mesh.save('bottom_mesh.stl')
 
-    def create_side_meshes(self):
+    def __create_side_meshes(self):
         """
         Create the side meshes by "triangulating manually". The faces array is created manually, and then combined with
         the vertices, this function creates all of the side meshes (xx, xy, yy, yx)
@@ -175,7 +178,7 @@ class StlGenerator:
                 self.yy_mesh.vectors[i][j] = self.yy_vertices[f[j]]
                 self.xy_mesh.vectors[i][j] = self.xy_vertices[f[j]]
 
-    def combine_meshes(self):
+    def __combine_meshes(self):
         """
         Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
         """
@@ -187,8 +190,8 @@ class StlGenerator:
         Generate .stl with provided filename based on the combined mesh.
         :param filename: Filename for the .stl file
         """
-        self.find_all_vertices()         # Find vertices of top, bottom and sides of the model
-        self.start_mesh_threads()         # Start meshing top, bottom and sides
-        self.stop_mesh_threads()          # Stop meshing top, bottom and sides
-        self.combine_meshes()             # Combine the top, bottom and side meshes to one mesh
+        self.__find_all_vertices()        # Find vertices of top, bottom and sides of the model
+        self.__start_mesh_threads()       # Start meshing top, bottom and sides
+        self.__stop_mesh_threads()        # Stop meshing top, bottom and sides
+        self.__combine_meshes()           # Combine the top, bottom and side meshes to one mesh
         self.combined_mesh.save(filename) # Save the combined mesh into a .stl file with given filename
