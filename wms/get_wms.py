@@ -36,7 +36,7 @@ class GetWMS:
             "1. First go to Google Maps and find the center point of \nan area in Norway you want to print a height model of.")
         print("2. Then enter the coordinates, the size of area in meters,\nresolution in pixels and a scaling factor.")
         print(
-            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 2000, 1000, 1 ] \nGeiranger[ 62.119509, 7.148389, 5000, 2500, 500, 0.5 ]\n")
+            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 2000, 1000, 1 ] \nGeiranger[ 62.119509, 7.148389, 15000, 1500, 500, 0.5 ]\n")
 
         n = 6  # number of input_list elements
         input_list = list(map(float, input("Enter lat,lon,width,height,resolution,scalefactor: ").strip().split(',')))[
@@ -145,20 +145,14 @@ class GetWMS:
                 height_data_x[x,y] = int(x)            # Populate the x array with the x index of the z value stored in height_data_z
                 height_data_y[x,y] = int(y)            # Populate the y array with the y index of the z value stored in height_data_z
 
-        # Invert x and y arrays so that the image shows the correct view (If this is not done, the image will be inverted when compared to the actual map).
-        height_data_x = height_data_x[::-1]
-        height_data_y = height_data_y[::-1]
+        # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
+        height_data_z = height_data_z[::-1]
 
-        # Add xyz coordinates into a single array (so that height_data_3d represents the (x, y, z) value of all the data points
+        # Add xyz coordinates into a single array (so that height_data_3d represents the (x, y, z) value of all the data points, so that the data can be plotted by PyVista
         height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
         bottom_surf_pts = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)*0-10]
 
-        self.height_data = height_data_z
-
-        if self.debug:
-            print(height_data_3d)
-            print(height_data_z)
-
+        self.height_data = height_data_z # Data for STL generator
 
         if(self.visualize):
             print("[INFO]: Calculated point cloud, starting Delaunay triangulation...")
