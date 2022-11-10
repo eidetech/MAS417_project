@@ -3,7 +3,7 @@ from stl_generator.stl_generator import StlGenerator
 
 if __name__ == "__main__":
     wms = GetWMS(debug=False, visualize=False) # get_wms object
-    wms.user_input() # Provide developer data input
+    wms.dev_input() # Provide developer data input
     wms.calculate_width_height() # Calculate width and height of image
     wms.calculate_height_data() # Calculate the height data for the chosen geographical area
     thickness = 10 # TODO: Should be a parameter for the user to input

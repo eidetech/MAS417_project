@@ -8,7 +8,7 @@ class StlGenerator:
     def __init__(self, height_data, thickness):
         self.height_data = height_data
         self.thickness = thickness
-        self.graph = False # For debugging purposes
+        self.graph = False # For debugging purposes when naming vertices
 
     def find_all_vertices(self):
         """
@@ -43,7 +43,7 @@ class StlGenerator:
                 idx+=1
 
         # Side vertices
-        # Filling xx, xy, yy, yx arrays with vertex data
+        # Filling xx, xy, yy, yx arrays with vertex data.
         idx = 0
         for x, row in enumerate(self.height_data):
             for y, column in enumerate(row):
@@ -53,27 +53,28 @@ class StlGenerator:
                 idx+=1
 
         # Completing xx vertex array
-        xx_vertices_top = self.top_vertices[:self.width] # Fill xx_vertices with the indexes from top_vertices that go along the x axis (fixed y axis of 0)
-        xx_vertices_bottom = [[pt[0], 0, -self.thickness] for pt in xx_vertices_top] # Make bottom array with specified thickness
+        xx_vertices_top = self.top_vertices[:self.width] # Fill xx_vertices with the indexes from top_vertices that go along the x axis (fixed y axis of 0) (selecting the first 500 elements, since the top_vertices array conveniently start with the xx values) )
+        xx_vertices_bottom = [[idx[0], 0, -self.thickness] for idx in xx_vertices_top] # Make bottom array with specified thickness
         self.xx_vertices = xx_vertices_top + xx_vertices_bottom # Append all bottom indexes to the top array
         xx_vertices_top = xx_vertices_top[::-1] # Reverse, so that it becomes the correct orientation
 
         # Completing xy vertex array
-        xy_vertices_bottom = [[self.width-1, pt[1], -self.thickness] for pt in xy_vertices_top] # Make bottom array with specified thickness
+        xy_vertices_bottom = [[self.width-1, idx[1], -self.thickness] for idx in xy_vertices_top] # Make bottom array with specified thickness
         self.xy_vertices = xy_vertices_top + xy_vertices_bottom # Append all bottom indexes to the top array
 
         # Completing yy vertex array
-        yy_vertices_bottom = [[0,pt[1], -self.thickness] for pt in yy_vertices_top] # Make bottom array with specified thickness
+        yy_vertices_bottom = [[0,idx[1], -self.thickness] for idx in yy_vertices_top] # Make bottom array with specified thickness
         self.yy_vertices = yy_vertices_top + yy_vertices_bottom # Append all bottom indexes to the top array
         
         # Completing yx vertex array
-        yx_vertices_top = self.top_vertices[-self.width:]
-        yx_vertices_bottom = [[pt[0], self.width-1, -self.thickness] for pt in yx_vertices_top] # Make bottom array with specified thickness
+        yx_vertices_top = self.top_vertices[-self.width:] # Selecting the last 500 elements of the top_vertices, since the top_vertices array conveniently end with the yx values (is the opposite side of xx)
+        yx_vertices_bottom = [[idx[0], self.width-1, -self.thickness] for idx in yx_vertices_top] # Make bottom array with specified thickness
         self.yx_vertices = yx_vertices_top + yx_vertices_bottom # Append all bottom indexes to the top array
 
         if self.graph:
             xxplot = pv.Chart2D()
             xx = [idx[2] for idx in xx_vertices_top]
+            xx = xx[::-1]
             xxplot.plot(xx)
 
             xyplot = pv.Chart2D()
@@ -82,10 +83,12 @@ class StlGenerator:
 
             yxplot = pv.Chart2D()
             yx = [idx[2] for idx in yx_vertices_top]
+            yx = yx[::-1]
             yxplot.plot(yx)
 
             yyplot = pv.Chart2D()
             yy = [idx[2] for idx in yy_vertices_top]
+            yy = yy[::-1]
             yyplot.plot(yy)
 
             pl = pv.Plotter(shape=(2, 2))
@@ -131,38 +134,34 @@ class StlGenerator:
         self.bottom_mesh.save('bottom_mesh.stl')
 
     def create_side_meshes(self):
-        # Create matrices for holding the indexes of the vertices that make up all the triangles
-        self.xx_faces = np.zeros([len(self.xx_vertices), 3], dtype=int) # Array for storing triangles, size = [number of vertices, 3] (row, col)
-        #self.yy_faces = np.zeros([len(self.yy_vertices), 3], dtype=int)
+        """
+        Create the side meshes by "triangulating manually". The faces array is created manually, and then combined with
+        the vertices, this function creates all of the side meshes (xx, xy, yy, yx)
+        """
+        self.faces = np.zeros([len(self.xx_vertices), 3], dtype=int) # Array for storing triangles, size = [number of vertices, 3] (row, col)
 
-        # Fill matrices with indexes that make up all of the triangles on xx and yy sides (xx is the as yx, and yy is the same as xy)
+        # Fill matrices with indexes that make up all of the triangles on xx and yy sides (xx is the same as yx, and yy is the same as xy)
+        # The reason for using self.width as index, is that the first len(width) elements are top vertices, and the next len(width) elements are bottom elements
+        # More visually, it looks like this: [498, 0, 43.0], [499, 0, 43.5], [0, 0, -10], [1, 0, -10], (element 498, 499, 500, 501 for a 500x500 image with 10 thickness)
         idx = 0
         for i in range(self.width - 1):
-            self.xx_faces[idx] = [i, i + 1, self.width + i]  # First triangle
-            self.xx_faces[idx + 1] = [i + 1, self.width + i + 1, self.width + i]  # Opposite triangle
-
-            #self.yy_faces[idx] = [i, i + 1, self.width + i]  # First triangle
-            #self.yy_faces[idx + 1] = [i + 1, self.width + i + 1, self.width + i]  # Opposite triangle
+            self.faces[idx] = [i, i + 1, self.width + i]  # First triangle (two height vertices and one bottom vertex (starting at index width)
+            self.faces[idx + 1] = [i + 1, self.width + i + 1, self.width + i]  # Opposite triangle (two height vertices and one bottom vertex (starting at index width)
             idx += 2
 
-        # Create meshes based on the faces created above
-        self.xx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
-        self.xy_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
-        self.yy_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
-        self.yx_mesh = mesh.Mesh(np.zeros(self.xx_faces.shape[0], dtype=mesh.Mesh.dtype))
+        # Initialize meshes based on the face "template" created above
+        self.xx_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
+        self.xy_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
+        self.yy_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
+        self.yx_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
 
-        #
-        for i, f in enumerate(self.xx_faces):
+        # Fill the mesh vectors with vertices
+        for i, f in enumerate(self.faces):
             for j in range(3):
                 self.xx_mesh.vectors[i][j] = self.xx_vertices[f[j]]
                 self.yx_mesh.vectors[i][j] = self.yx_vertices[f[j]]
                 self.yy_mesh.vectors[i][j] = self.yy_vertices[f[j]]
                 self.xy_mesh.vectors[i][j] = self.xy_vertices[f[j]]
-
-        #for i, f in enumerate(self.yy_faces):
-        #    for j in range(3):
-        #        self.yy_mesh.vectors[i][j] = self.yy_vertices[f[j]]
-        #        self.xy_mesh.vectors[i][j] = self.xy_vertices[f[j]]
 
     def combine_meshes(self):
         """
