@@ -56,12 +56,12 @@ class GetWMS:
         # Static Geiranger for dev
         deg2meter_list = [40000*2, 90000*2]
         input_list = [0] * 6       # 6x1 array of 0's
-        input_list[0] = 62.119509  # Lat
-        input_list[1] = 7.148389   # Lon
+        input_list[0] = 60.005371  # Lat
+        input_list[1] = 6.082160   # Lon
         input_list[2] = 10000      # Width
         input_list[3] = 10000      # Height
         input_list[4] = 500        # Res
-        input_list[5] = 0.3        # Scale/himalaya
+        input_list[5] = 0        # Scale/himalaya
         bbox = [input_list[1] - (input_list[2] / deg2meter_list[0]), input_list[0] - (input_list[3] / deg2meter_list[1]),
                 input_list[1] + (input_list[2] / deg2meter_list[0]), input_list[0] + (input_list[3] / deg2meter_list[1])]
         bbox2string = ','.join(str(i) for i in bbox)
@@ -107,6 +107,7 @@ class GetWMS:
 
         # Open the response image as binary data
         bin_img = Image.open(BytesIO(response.content))
+
         # Blur image to filter "noise". Makes topology surface smoother
         blur_img = bin_img.filter(ImageFilter.BoxBlur(5)) # TODO: Maybe filtering constant should be a parameter for the user to input?
         # Convert the blurred binary image to numpy array
