@@ -3,6 +3,7 @@ import threading as thr
 import numpy as np
 import pyvista as pv
 from scipy.spatial import Delaunay
+import time
 
 class StlGenerator:
     def __init__(self, height_data, thickness):
@@ -200,10 +201,11 @@ class StlGenerator:
         self.combined_mesh.save(filename) # Save the combined mesh into a .stl file with given filename
         print(f"[INFO]: Saved STL file.")
     def visualize(self):
-        print(f"[INFO]: Visualizing saved STL file.")
+        print(f"[INFO]: Opening visualization window of generated STL.")
         plotter = pv.Plotter()
         mesh = pv.read(self.filename)
         plotter.add_mesh(mesh)
         plotter.add_axes(line_width=5, labels_off=False)
-        plotter.add_title('STL visualization')
+        plotter.add_title(self.filename)
+        plotter.camera.elevation = 20
         plotter.show()

@@ -16,7 +16,7 @@ class GetWMS:
         self.debug = debug
 
         # Initialize height data variable
-        self.height_data = 0
+        self.height_data = None
 
     def user_input(self):
         """
@@ -25,7 +25,7 @@ class GetWMS:
         :return: Nothing
         """
         global bbox2string, input_list
-
+        deg2meter_list = [40000 * 2, 90000 * 2]
         print("----------MAP TO 3D-PRINT-MODEL----------")
         print(
             "This program converts a terrain model of a chosen \nnorwegian geographic area to a .stl_generator file for 3d printing\n")
@@ -33,14 +33,16 @@ class GetWMS:
             "1. First go to Google Maps and find the center point of \nan area in Norway you want to print a height model of.")
         print("2. Then enter the coordinates, the size of area in meters,\nresolution in pixels and a scaling factor.")
         print(
-            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 2000, 1000, 1 ] \nGeiranger[ 62.119509, 7.148389, 15000, 1500, 500, 0.5 ]\n")
+            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 2000, 1000, 1 ] \nGeiranger[ 62.119509, 7.148389, 15000, 15000, 500, 0.5 ]\n")
 
         n = 6  # number of input_list elements
         input_list = list(map(float, input("Enter lat,lon,width,height,resolution,scalefactor: ").strip().split(',')))[
                      :n]
 
-        bbox = [input_list[1] - (input_list[2] / 50000), input_list[0] - (input_list[3] / 50000),
-                input_list[1] + (input_list[2] / 50000), input_list[0] + (input_list[3] / 50000)]
+        bbox = [input_list[1] - (input_list[2] / deg2meter_list[0]),
+                input_list[0] - (input_list[3] / deg2meter_list[1]),
+                input_list[1] + (input_list[2] / deg2meter_list[0]),
+                input_list[0] + (input_list[3] / deg2meter_list[1])]
         bbox2string = ','.join(str(i) for i in bbox)
 
     def dev_input(self):
@@ -95,27 +97,29 @@ class GetWMS:
 
         # Make the request and store returned data in response
         print(f"[INFO]: API request sent...")
-        response = requests.get(wms_url, query_data, verify=True, timeout=10)
+        response = requests.get(wms_url, query_data, verify=True, timeout=100)
         if(response.status_code == 200):
             print(f"[INFO]: API data received.")
 
-        if self.debug:
-            print(f"[DEBUG]: HTTP status code: {response.status_code}, elapsed time to get response: {response.elapsed.microseconds/1000}ms")
+            if self.debug:
+                print(f"[DEBUG]: HTTP status code: {response.status_code}, elapsed time to get response: {response.elapsed.microseconds/1000}ms")
 
-        # Open the response image as binary data
-        bin_img = Image.open(BytesIO(response.content))
-        # Blur image to filter "noise". Makes topology surface smoother
-        blur_img = bin_img.filter(ImageFilter.BoxBlur(5)) # TODO: Maybe filtering constant should be a parameter for the user to input?
-        # Convert the blurred binary image to numpy array
-        np_img = np.asarray(blur_img)
+            # Open the response image as binary data
+            bin_img = Image.open(BytesIO(response.content))
+            # Blur image to filter "noise". Makes topology surface smoother
+            blur_img = bin_img.filter(ImageFilter.BoxBlur(5)) # TODO: Maybe filtering constant should be a parameter for the user to input?
+            # Convert the blurred binary image to numpy array
+            np_img = np.asarray(blur_img)
 
-        # TODO: the code commented out below is not necessary. Or could be moved to debugging if statement
-        #print("[INFO]: Showing surface model image...")
-        #npy_img = np.asarray(bin_img)
-        #npy2_img = Image.fromarray(np.uint8(npy_img))
-        #npy2_img.show()
+            # TODO: the code commented out below is not necessary. Or could be moved to debugging if statement
+            #print("[INFO]: Showing surface model image...")
+            #npy_img = np.asarray(bin_img)
+            #npy2_img = Image.fromarray(np.uint8(npy_img))
+            #npy2_img.show()
 
-        return np_img
+            return np_img
+        else:
+            return 0
 
     def calculate_height_data(self):
         """
@@ -123,31 +127,32 @@ class GetWMS:
         :return: Nothing
         """
         np_img = self.__get_api_data()
-        # Preallocate empty array with the size of the image
-        height_data_size = np.zeros(width*height)
+        if(isinstance(np_img, np.ndarray)):
+            # Preallocate empty array with the size of the image
+            height_data_size = np.zeros(width*height)
 
-        if self.debug:
-            print(height_data_size.shape) # Shows the initial shape of the array
+            if self.debug:
+                print(height_data_size.shape) # Shows the initial shape of the array
 
-        # Creating and reshaping the arrays to width, height
-        height_data_x = np.array(height_data_size).reshape(width, height)
-        height_data_y = np.array(height_data_size).reshape(width, height)
-        height_data_z = np.array(height_data_size).reshape(width, height)
+            # Creating and reshaping the arrays to width, height
+            height_data_x = np.array(height_data_size).reshape(width, height)
+            height_data_y = np.array(height_data_size).reshape(width, height)
+            height_data_z = np.array(height_data_size).reshape(width, height)
 
-        if self.debug:
-            print(height_data_z.shape) # Should return a Numpy array with shape width, height
+            if self.debug:
+                print(height_data_z.shape) # Should return a Numpy array with shape width, height
 
-        scale = input_list[5] # Scaling factor for the terrain height point difference (Himalaya factor)
+            scale = input_list[5] # Scaling factor for the terrain height point difference (Himalaya factor)
 
-        for y, row in enumerate(np_img):
-            for x, column in enumerate(row):
-                height_data_z[x,y] = column[0] * scale # Populate the z array with the value of the red color in the pixel of that row and column (only one color is needed as R=G=B)
-                height_data_x[x,y] = int(x)            # Populate the x array with the x index of the z value stored in height_data_z
-                height_data_y[x,y] = int(y)            # Populate the y array with the y index of the z value stored in height_data_z
+            for y, row in enumerate(np_img):
+                for x, column in enumerate(row):
+                    height_data_z[x,y] = column[0] * scale # Populate the z array with the value of the red color in the pixel of that row and column (only one color is needed as R=G=B)
+                    height_data_x[x,y] = int(x)            # Populate the x array with the x index of the z value stored in height_data_z
+                    height_data_y[x,y] = int(y)            # Populate the y array with the y index of the z value stored in height_data_z
 
-        # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
-        height_data_z = height_data_z[::-1]
-        self.height_data = height_data_z # Data for STL generator
+            # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
+            height_data_z = height_data_z[::-1]
+            self.height_data = height_data_z # Data for STL generator
 
     def get_height_data(self):
         """
@@ -157,7 +162,7 @@ class GetWMS:
         return self.height_data
 
 if __name__ == "__main__":
-    wms = GetWMS(debug=True, visualize=False) # Create wms object
+    wms = GetWMS(debug=True) # Create wms object
     wms.dev_input() # Add the development input (Geiranger lat lon)
     wms.calculate_width_height() # Calculate the width and height of resulting image TODO: Could be a private function to be called inside class
     wms.calculate_height_data() # Calculate the height data
