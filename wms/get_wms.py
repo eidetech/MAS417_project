@@ -5,7 +5,7 @@ import numpy as np
 import pyvista as pv
 
 class GetWMS:
-    def __init__(self, debug, visualize):
+    def __init__(self, debug):
         """
         Constructor
         :param debug:
@@ -14,9 +14,6 @@ class GetWMS:
 
         # Variable for showing debugging info or not
         self.debug = debug
-
-        # Variable for visualizing the height data or not
-        self.visualize = visualize
 
         # Initialize height data variable
         self.height_data = 0
@@ -97,7 +94,10 @@ class GetWMS:
                       'HEIGHT': str(height)}
 
         # Make the request and store returned data in response
+        print(f"[INFO]: API request sent...")
         response = requests.get(wms_url, query_data, verify=True, timeout=10)
+        if(response.status_code == 200):
+            print(f"[INFO]: API data received.")
 
         if self.debug:
             print(f"[DEBUG]: HTTP status code: {response.status_code}, elapsed time to get response: {response.elapsed.microseconds/1000}ms")
@@ -147,41 +147,7 @@ class GetWMS:
 
         # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
         height_data_z = height_data_z[::-1]
-
-        # Add xyz coordinates into a single array (so that height_data_3d represents the (x, y, z) value of all the data points, so that the data can be plotted by PyVista
-        height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
-        bottom_surf_pts = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)*0-10]
-
         self.height_data = height_data_z # Data for STL generator
-
-        if(self.visualize):
-            print("[INFO]: Calculated point cloud, starting Delaunay triangulation...")
-            # Generate PyVista point cloud
-            top_surf = pv.PolyData(height_data_3d)
-            bottom_surf = pv.PolyData(bottom_surf_pts)
-
-           # cloud.plot(point_size=1)
-
-            # Apply Delaunay triangulation to connect points into surfaces
-            surf = top_surf.delaunay_2d()
-            surf2 = bottom_surf.delaunay_2d()
-
-            print("[INFO]: Showing result...")
-
-            # Set up plotter
-            plotter = pv.Plotter()
-            # Add the mesh to the plotter
-            #plotter.add_points(height_data_3d, point_size=10, color='orange')
-            plotter.add_mesh(surf, color='white')
-            plotter.add_mesh(surf2, color='white')
-            _ = plotter.add_mesh(pv.Sphere(center=(2, 0, 0)), color='r')
-            _ = plotter.add_mesh(pv.Sphere(center=(0, 2, 0)), color='g')
-            _ = plotter.add_mesh(pv.Sphere(center=(0, 0, 2)), color='b')
-            _ = plotter.add_mesh(pv.Sphere(radius=10, center=(0, 0, 43.5)), color='b')
-            _ = plotter.add_mesh(pv.Sphere(radius=10, center=(500, 500, 72.5)), color='r')
-            _ = plotter.add_axes_at_origin()
-            # Show the plot in window
-            plotter.show(screenshot='topography.png')
 
     def get_height_data(self):
         """

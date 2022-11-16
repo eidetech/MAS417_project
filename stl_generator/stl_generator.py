@@ -15,6 +15,8 @@ class StlGenerator:
                              thr.Thread(target=self.__create_bottom_mesh),
                              thr.Thread(target=self.__create_side_meshes)]
 
+        self.filename = None
+
     # Function for starting all the meshing threads
     def __start_mesh_threads(self):
         for i in range(len(self.mesh_threads)):
@@ -189,8 +191,19 @@ class StlGenerator:
         Generate .stl with provided filename based on the combined mesh.
         :param filename: Filename for the .stl file
         """
+        print(f"[INFO]: Generating STL file.")
+        self.filename = filename
         self.__find_all_vertices()        # Find vertices of top, bottom and sides of the model
         self.__start_mesh_threads()       # Start meshing top, bottom and sides
         self.__stop_mesh_threads()        # Stop meshing top, bottom and sides
         self.__combine_meshes()           # Combine the top, bottom and side meshes to one mesh
         self.combined_mesh.save(filename) # Save the combined mesh into a .stl file with given filename
+        print(f"[INFO]: Saved STL file.")
+    def visualize(self):
+        print(f"[INFO]: Visualizing saved STL file.")
+        plotter = pv.Plotter()
+        mesh = pv.read(self.filename)
+        plotter.add_mesh(mesh)
+        plotter.add_axes(line_width=5, labels_off=False)
+        plotter.add_title('STL visualization')
+        plotter.show()
