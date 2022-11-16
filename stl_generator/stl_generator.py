@@ -71,7 +71,7 @@ class StlGenerator:
         xx_vertices_top = self.top_vertices[:self.width] # Fill xx_vertices with the indexes from top_vertices that go along the x axis (fixed y axis of 0) (selecting the first 500 elements, since the top_vertices array conveniently start with the xx values) )
         xx_vertices_bottom = [[idx[0], 0, -self.thickness] for idx in xx_vertices_top] # Make bottom array with specified thickness
         self.xx_vertices = xx_vertices_top + xx_vertices_bottom # Append all bottom indexes to the top array
-        xx_vertices_top = xx_vertices_top[::-1] # Reverse, so that it becomes the correct orientation
+        xx_vertices_top = xx_vertices_top[::-1] # Reverse, so that it becomes the correct orientation for plotting
 
         # Completing xy vertex array
         xy_vertices_bottom = [[self.width-1, idx[1], -self.thickness] for idx in xy_vertices_top] # Make bottom array with specified thickness
@@ -136,7 +136,6 @@ class StlGenerator:
         for i, f in enumerate(self.top_faces):
             for j in range(3):
                 self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
-        self.top_mesh.save('top_mesh.stl')
     def __create_bottom_mesh(self):
         """
         Create the bottom mesh based on bottom vertices. Creating faces using the 2D grid which consists of [x,y] points for
@@ -147,7 +146,6 @@ class StlGenerator:
         for i, f in enumerate(self.bottom_faces):
             for j in range(3):
                 self.bottom_mesh.vectors[i][j] = self.bottom_vertices[f[j]]
-        self.bottom_mesh.save('bottom_mesh.stl')
 
     def __create_side_meshes(self):
         """
