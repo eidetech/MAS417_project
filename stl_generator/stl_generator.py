@@ -193,17 +193,17 @@ class StlGenerator:
         Generate .stl with provided filename based on the combined mesh.
         :param filename: Filename for the .stl file
         """
-        print(f"[INFO]: Generating STL file.")
+        print(f"      [INFO]: Generating STL file.")
         self.filename = filename
         self.__find_all_vertices()        # Find vertices of top, bottom and sides of the model
         self.__start_mesh_threads()       # Start meshing top, bottom and sides
         self.__stop_mesh_threads()        # Stop meshing top, bottom and sides
         self.__combine_meshes()           # Combine the top, bottom and side meshes to one mesh
         self.combined_mesh.save(filename) # Save the combined mesh into a .stl file with given filename
-        print(f"[INFO]: Saved STL file.")
+        print(f"      [INFO]: Saved STL file.")
 
     def visualize(self):
-        print(f"[INFO]: Opening visualization window of generated STL.")
+        print(f"      [INFO]: Opening visualization window of generated STL.")
         plotter = pv.Plotter()
         mesh = pv.read(self.filename)
         plotter.add_mesh(mesh)
