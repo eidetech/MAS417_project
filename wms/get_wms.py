@@ -47,7 +47,7 @@ class GetWMS:
         print("      #   2. Then enter the coordinates, the size of area in meters,        #\n      #      a scaling factor, the thickness of the 3D-print and a filename.#")
         print("      #######################################################################")
         print(Fore.LIGHTBLUE_EX, file=stream)
-        print("      Examples: \n      Gaustadtoppen [ 59.854102, 8.648146, 2000, 1, 10, gaustadtoppen.stl ] \n      Geiranger     [ 62.119509, 7.148389, 15000, 0.5, 10, geiranger.stl  ]\n")
+        print("      Examples: \n      Gaustadtoppen [ 59.854102, 8.648146, 15000, 1, -10, gaustadtoppen.stl ] \n      Geiranger     [ 62.119509, 7.148389, 15000, 0.5, 10, geiranger.stl    ]\n")
 
         print("      Enter the following values, separated by comma:", Fore.WHITE, file=stream)
         n = 6  # number of input_list elements
