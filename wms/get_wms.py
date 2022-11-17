@@ -22,22 +22,24 @@ class GetWMS:
         user_input is used for retrieving input data from user to the program
         """
         global bbox2string, input_list, width, height
-        deg2meter_list = [40000 * 2, 90000 * 2]
+
         print("----------MAP TO 3D-PRINT-MODEL----------")
         print(
             "This program converts a terrain model of a chosen \nNorwegian geographic area to a .stl_generator file for 3d printing\n")
         print(
             "1. First go to Google Maps and find the center point of \nan area in Norway you want to print a height model of.")
-        print("2. Then enter the coordinates, the size of area in meters,\nresolution in pixels and a scaling factor.")
+        print("2. Then enter the coordinates, the size of area in meters,\na scaling factor, the thickness of the 3d-print and a filname.")
         print(
-            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 2000, 1000, 1, 10, gaustadtoppen.stl ] \nGeiranger[ 62.119509, 7.148389, 15000, 15000, 500, 0.5, 10, geiranger.stl ]\n")
+            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 1, 10, gaustadtoppen.stl ] \nGeiranger[ 62.119509, 7.148389, 15000, 0.5, 10, geiranger.stl ]\n")
 
-        n = 8  # number of input_list elements
+        n = 6  # number of input_list elements
+
         input_list = list(
-            input("Enter lat,lon,width,height,resolution,scalefactor, thickness, filename.stl: ").strip().split(','))[:n]
+            input("Enter lat, lon, size, scalefactor, print thickness, filename.stl: ").strip().split(','))[:n]
 
+        deg2meter_list = [40000 * 2, 90000 * 2]
         # Convert the 7 first input entries to float numbers
-        for i in range(7):
+        for i in range(5):
             input_list[i] = float(input_list[i])
 
         bbox = [input_list[1] - (input_list[2] / deg2meter_list[0]),
