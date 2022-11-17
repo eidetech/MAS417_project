@@ -35,7 +35,7 @@ class GetWMS:
         n = 6  # number of input_list elements
 
         input_list = list(
-            input("Enter lat, lon, size, scalefactor, print thickness, filename.stl: ").strip().split(','))[:n]
+            input("Enter the following values, separated by comma: lat, lon, size, scale factor, print thickness, filename.stl: ").strip().split(','))[:n]
 
         deg2meter_list = [40000 * 2, 90000 * 2]
         # Convert the 7 first input entries to float numbers
@@ -43,13 +43,13 @@ class GetWMS:
             input_list[i] = float(input_list[i])
 
         bbox = [input_list[1] - (input_list[2] / deg2meter_list[0]),
-                input_list[0] - (input_list[3] / deg2meter_list[1]),
+                input_list[0] - (input_list[2] / deg2meter_list[1]),
                 input_list[1] + (input_list[2] / deg2meter_list[0]),
-                input_list[0] + (input_list[3] / deg2meter_list[1])]
+                input_list[0] + (input_list[2] / deg2meter_list[1])]
         bbox2string = ','.join(str(i) for i in bbox)
 
-        resolution = int(input_list[4])  # resolution of picture width in pixels
-        height = int(resolution / (input_list[2] / input_list[3]))
+        resolution = 500  # resolution of picture width in pixels
+        height = 500#int(resolution / (input_list[2] / input_list[2]))
         width = resolution
         print(height)
 
@@ -137,7 +137,7 @@ class GetWMS:
             if self.debug:
                 print(height_data_z.shape)  # Should return a Numpy array with shape width, height
 
-            scale = input_list[5]  # Scaling factor for the terrain height point difference (Himalaya factor)
+            scale = input_list[3]  # Scaling factor for the terrain height point difference (Himalaya factor)
 
             for y, row in enumerate(np_img):
                 for x, column in enumerate(row):
@@ -145,8 +145,8 @@ class GetWMS:
 
             height_data_z = height_data_z[::-1]  # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
             self.height_data = height_data_z  # Data for STL generator
-            self.thickness = input_list[6]
-            self.filename = input_list[7]
+            self.thickness = input_list[4]
+            self.filename = input_list[5]
 
 if __name__ == "__main__":
     wms = GetWMS(debug=False)  # get_wms object
