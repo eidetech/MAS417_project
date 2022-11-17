@@ -3,6 +3,7 @@ import threading as thr
 import numpy as np
 import pyvista as pv
 from scipy.spatial import Delaunay
+import time
 
 class StlGenerator:
     def __init__(self, height_data, thickness):
@@ -14,6 +15,8 @@ class StlGenerator:
         self.mesh_threads = [thr.Thread(target=self.__create_top_mesh),
                              thr.Thread(target=self.__create_bottom_mesh),
                              thr.Thread(target=self.__create_side_meshes)]
+
+        self.filename = None
 
     # Function for starting all the meshing threads
     def __start_mesh_threads(self):
@@ -39,8 +42,8 @@ class StlGenerator:
         self.bottom_vertices = [0] * self.height * self.width
         self.grid_2d = [0] * self.height * self.width # Flat 2D grid of all the data points in height_data. Used for Delaunay triangulation of the top/bottom surfaces
 
-        xy_vertices_top = [0] * self.width # TODO: width or height here?
-        yy_vertices_top = [0] * self.width # TODO: width or height here?
+        xy_vertices_top = [0] * self.width
+        yy_vertices_top = [0] * self.width
 
         # Top vertices (which is the actual height data points)
         idx = 0
@@ -136,6 +139,7 @@ class StlGenerator:
         for i, f in enumerate(self.top_faces):
             for j in range(3):
                 self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
+
     def __create_bottom_mesh(self):
         """
         Create the bottom mesh based on bottom vertices. Creating faces using the 2D grid which consists of [x,y] points for
@@ -161,7 +165,7 @@ class StlGenerator:
         for i in range(self.width - 1):
             self.faces[idx] = [i, i + 1, self.width + i]  # First triangle (two height vertices and one bottom vertex (starting at index width)
             self.faces[idx + 1] = [i + 1, self.width + i + 1, self.width + i]  # Opposite triangle (two height vertices and one bottom vertex (starting at index width)
-            idx += 2
+            idx += 2  # Increasing index by two sice two triangles have been created in a single loop
 
         # Initialize meshes based on the face "template" created above
         self.xx_mesh = mesh.Mesh(np.zeros(self.faces.shape[0], dtype=mesh.Mesh.dtype))
@@ -189,8 +193,21 @@ class StlGenerator:
         Generate .stl with provided filename based on the combined mesh.
         :param filename: Filename for the .stl file
         """
+        print(f"      [INFO]: Generating STL file.")
+        self.filename = filename
         self.__find_all_vertices()        # Find vertices of top, bottom and sides of the model
         self.__start_mesh_threads()       # Start meshing top, bottom and sides
         self.__stop_mesh_threads()        # Stop meshing top, bottom and sides
         self.__combine_meshes()           # Combine the top, bottom and side meshes to one mesh
         self.combined_mesh.save(filename) # Save the combined mesh into a .stl file with given filename
+        print(f"      [INFO]: Saved STL file.")
+
+    def visualize(self):
+        print(f"      [INFO]: Opening visualization window of generated STL.")
+        plotter = pv.Plotter()
+        mesh = pv.read(self.filename)
+        plotter.add_mesh(mesh)
+        plotter.add_axes(line_width=5, labels_off=False)
+        plotter.add_title(self.filename)
+        plotter.camera.elevation = 20
+        plotter.show()

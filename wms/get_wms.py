@@ -2,81 +2,67 @@ from io import BytesIO
 from PIL import Image, ImageFilter
 import requests
 import numpy as np
-import pyvista as pv
+from colorama import init, AnsiToWin32, Fore, Style
+import sys
+stream = AnsiToWin32(sys.stderr).stream
 
 class GetWMS:
-    def __init__(self, debug, visualize):
+    def __init__(self, debug):
         """
         Constructor
         :param debug:
-        :param visualize:
         """
-
         # Variable for showing debugging info or not
         self.debug = debug
 
-        # Variable for visualizing the height data or not
-        self.visualize = visualize
-
-        # Initialize height data variable
-        self.height_data = 0
+        # Initialize variables
+        self.height_data = None
+        self.thickness = None
+        self.filename = None
+        self.input_list = None
+        self.bbox2string = None
+        self.width = 500
+        self.height = 500
 
     def user_input(self):
         """
         user_input is used for retrieving input data from user to the program
-
-        :return: Nothing
         """
-        global bbox2string, input_list
+        print(Fore.RED, file=stream)
+        print(r"""
+                _                        __   _   _                                
+               (_)                      / _| | \ | |                               
+   __ _   _ __  _  ___  ___ ___    ___ | |_  |  \| | ___  _ ____      ____ _ _   _ 
+  / _` | | '_ \| |/ _ \/ __/ _ \  / _ \|  _| | . ` |/ _ \| '__\ \ /\ / / _` | | | |
+ | (_| | | |_) | |  __/ (_|  __/ | (_) | |   | |\  | (_) | |   \ V  V / (_| | |_| |
+  \__,_| | .__/|_|\___|\___\___|  \___/|_|   |_| \_|\___/|_|    \_/\_/ \__,_|\__, |
+         | |                                                                  __/ |
+         |_|                                                                 |___/ 
+              """)
 
-        print("----------MAP TO 3D-PRINT-MODEL----------")
-        print(
-            "This program converts a terrain model of a chosen \nnorwegian geographic area to a .stl_generator file for 3d printing\n")
-        print(
-            "1. First go to Google Maps and find the center point of \nan area in Norway you want to print a height model of.")
-        print("2. Then enter the coordinates, the size of area in meters,\nresolution in pixels and a scaling factor.")
-        print(
-            "Examples: \nGaustadtoppen[ 59.854102, 8.648146, 2000, 2000, 1000, 1 ] \nGeiranger[ 62.119509, 7.148389, 15000, 1500, 500, 0.5 ]\n")
+        print(Fore.WHITE, file=stream)
+        print("      ############################ INSTRUCTIONS #############################")
+        print("      #   This program converts a terrain model of a chosen Norwegian       #\n      #   geographic area to a .stl file for 3D printing.                   #")
+        print("      #   1. First go to Google Maps and find the center point of an area   #\n      #      in Norway you want to print a height model of.                 #")
+        print("      #   2. Then enter the coordinates, the size of area in meters,        #\n      #      a scaling factor, the thickness of the 3D-print and a filename.#")
+        print("      #######################################################################")
+        print(Fore.LIGHTBLUE_EX, file=stream)
+        print("      Examples: \n      Gaustadtoppen [ 59.854102, 8.648146, 2000, 1, 10, gaustadtoppen.stl ] \n      Geiranger     [ 62.119509, 7.148389, 15000, 0.5, 10, geiranger.stl  ]\n")
 
+        print("      Enter the following values, separated by comma:", Fore.WHITE, file=stream)
         n = 6  # number of input_list elements
-        input_list = list(map(float, input("Enter lat,lon,width,height,resolution,scalefactor: ").strip().split(',')))[
-                     :n]
+        self.input_list = list(input("      lat, lon, size, scale factor, print thickness, filename.stl: ").strip().split(','))[:n]
+        print(Style.RESET_ALL, file=stream)
+        deg2meter_list = [40000 * 2, 90000 * 2]
+        # Convert the 7 first input entries to float numbers
+        for i in range(5):
+            self.input_list[i] = float(self.input_list[i])
 
-        bbox = [input_list[1] - (input_list[2] / 50000), input_list[0] - (input_list[3] / 50000),
-                input_list[1] + (input_list[2] / 50000), input_list[0] + (input_list[3] / 50000)]
-        bbox2string = ','.join(str(i) for i in bbox)
-
-    def dev_input(self):
-        """
-        dev_input is used for inputting necessary data to the program which will later be provided by user
-
-        :return: Nothing
-        """
-        global bbox2string, input_list
-        # Static Geiranger for dev
-        input_list = [0] * 6       # 6x1 array of 0's
-        input_list[0] = 62.119509  # Lat
-        input_list[1] = 7.148309   # Lon
-        input_list[2] = 15000      # Width
-        input_list[3] = 15000      # Height
-        input_list[4] = 500        # Res
-        input_list[5] = 0.5        # Scale/himalaya
-        bbox = [input_list[1] - (input_list[2] / 50000), input_list[0] - (input_list[3] / 50000),
-                input_list[1] + (input_list[2] / 50000), input_list[0] + (input_list[3] / 50000)]
-        bbox2string = ','.join(str(i) for i in bbox)
-
-    def calculate_width_height(self):
-        """
-        calculate_width_height calculates the width and height of the image retrieved from API based on resolution
-        :return: Nothing
-        """
-        global width, height
-
-        resolution = int(input_list[4])  # resolution of picture width in pixels
-        height = int(resolution / (input_list[2] / input_list[3]))
-        width = resolution
-
-        print(f"[INFO]: Image resolution: {width} x {height} pixels")
+        bbox = [self.input_list[1] - (self.input_list[2] / deg2meter_list[0]),
+                self.input_list[0] - (self.input_list[2] / deg2meter_list[1]),
+                self.input_list[1] + (self.input_list[2] / deg2meter_list[0]),
+                self.input_list[0] + (self.input_list[2] / deg2meter_list[1])]
+        self.bbox2string = ','.join(str(i) for i in bbox)
 
     def __get_api_data(self):
         """
@@ -91,108 +77,65 @@ class GetWMS:
                       'FORMAT': 'image/png',
                       'STYLES': 'default',
                       'LAYERS': 'DOM:None',
-                      'CRS': 'CRS:84',          # Geoedic system to enter google map coordinates in decimal degrees
-                      'BBOX': str(bbox2string),
-                      'WIDTH': str(width),
-                      'HEIGHT': str(height)}
+                      'CRS': 'CRS:84',  # Geoedic system to enter google map coordinates in decimal degrees
+                      'BBOX': str(self.bbox2string),
+                      'WIDTH': str(self.width),
+                      'HEIGHT': str(self.height)}
 
         # Make the request and store returned data in response
-        response = requests.get(wms_url, query_data, verify=True, timeout=10)
+        print(f"      [INFO]: API request sent...")
+        response = requests.get(wms_url, query_data, verify=True, timeout=1000)
+        if (response.status_code == 200):
+            print(f"      [INFO]: API data received.")
 
-        if self.debug:
-            print(f"[DEBUG]: HTTP status code: {response.status_code}, elapsed time to get response: {response.elapsed.microseconds/1000}ms")
+            if self.debug:
+                print(
+                    f"      [DEBUG]: HTTP status code: {response.status_code}, elapsed time to get response: {response.elapsed.microseconds / 1000}ms")
 
-        # Open the response image as binary data
-        bin_img = Image.open(BytesIO(response.content))
-        # Blur image to filter "noise". Makes topology surface smoother
-        blur_img = bin_img.filter(ImageFilter.BoxBlur(5)) # TODO: Maybe filtering constant should be a parameter for the user to input?
-        # Convert the blurred binary image to numpy array
-        np_img = np.asarray(blur_img)
+            # Open the response image as binary data
+            bin_img = Image.open(BytesIO(response.content))
+            # Blur image to filter "noise". Makes topology surface smoother
+            blur_img = bin_img.filter(ImageFilter.BoxBlur(5))
+            # Convert the blurred binary image to numpy array
+            np_img = np.asarray(blur_img)
 
-        # TODO: the code commented out below is not necessary. Or could be moved to debugging if statement
-        #print("[INFO]: Showing surface model image...")
-        #npy_img = np.asarray(bin_img)
-        #npy2_img = Image.fromarray(np.uint8(npy_img))
-        #npy2_img.show()
+            return np_img
+        else:
+            return 0
 
-        return np_img
-
-    def calculate_height_data(self):
+    def calculate(self):
         """
         calculate_height_data uses the numpy image to calculate the height data matrix and visualize the height data using PyVista
         :return: Nothing
         """
         np_img = self.__get_api_data()
-        # Preallocate empty array with the size of the image
-        height_data_size = np.zeros(width*height)
+        if (isinstance(np_img, np.ndarray)):
 
-        if self.debug:
-            print(height_data_size.shape) # Shows the initial shape of the array
+            # Preallocate empty array with the size of the image
+            height_data_size = np.zeros(self.width * self.height)
 
-        # Creating and reshaping the arrays to width, height
-        height_data_x = np.array(height_data_size).reshape(width, height)
-        height_data_y = np.array(height_data_size).reshape(width, height)
-        height_data_z = np.array(height_data_size).reshape(width, height)
+            if self.debug:
+                print(height_data_size.shape)  # Shows the initial shape of the array
 
-        if self.debug:
-            print(height_data_z.shape) # Should return a Numpy array with shape width, height
+            # Creating and reshaping the array to width, height
+            height_data_z = np.array(height_data_size).reshape(self.width, self.height)
 
-        scale = input_list[5] # Scaling factor for the terrain height point difference (Himalaya factor)
+            if self.debug:
+                print(height_data_z.shape)  # Should return a Numpy array with shape width, height
 
-        for y, row in enumerate(np_img):
-            for x, column in enumerate(row):
-                height_data_z[x,y] = column[0] * scale # Populate the z array with the value of the red color in the pixel of that row and column (only one color is needed as R=G=B)
-                height_data_x[x,y] = int(x)            # Populate the x array with the x index of the z value stored in height_data_z
-                height_data_y[x,y] = int(y)            # Populate the y array with the y index of the z value stored in height_data_z
+            scale = self.input_list[3]  # Scaling factor for the terrain height point difference (Himalaya factor)
 
-        # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
-        height_data_z = height_data_z[::-1]
+            for y, row in enumerate(np_img):
+                for x, column in enumerate(row):
+                    height_data_z[x, y] = column[0] * scale  # Populate the z array with the value of the red color in the pixel of that row and column (only one color is needed as R=G=B)
 
-        # Add xyz coordinates into a single array (so that height_data_3d represents the (x, y, z) value of all the data points, so that the data can be plotted by PyVista
-        height_data_3d = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)]
-        bottom_surf_pts = np.c_[height_data_x.reshape(-1), height_data_y.reshape(-1), height_data_z.reshape(-1)*0-10]
-
-        self.height_data = height_data_z # Data for STL generator
-
-        if(self.visualize):
-            print("[INFO]: Calculated point cloud, starting Delaunay triangulation...")
-            # Generate PyVista point cloud
-            top_surf = pv.PolyData(height_data_3d)
-            bottom_surf = pv.PolyData(bottom_surf_pts)
-
-           # cloud.plot(point_size=1)
-
-            # Apply Delaunay triangulation to connect points into surfaces
-            surf = top_surf.delaunay_2d()
-            surf2 = bottom_surf.delaunay_2d()
-
-            print("[INFO]: Showing result...")
-
-            # Set up plotter
-            plotter = pv.Plotter()
-            # Add the mesh to the plotter
-            #plotter.add_points(height_data_3d, point_size=10, color='orange')
-            plotter.add_mesh(surf, color='white')
-            plotter.add_mesh(surf2, color='white')
-            _ = plotter.add_mesh(pv.Sphere(center=(2, 0, 0)), color='r')
-            _ = plotter.add_mesh(pv.Sphere(center=(0, 2, 0)), color='g')
-            _ = plotter.add_mesh(pv.Sphere(center=(0, 0, 2)), color='b')
-            _ = plotter.add_mesh(pv.Sphere(radius=10, center=(0, 0, 43.5)), color='b')
-            _ = plotter.add_mesh(pv.Sphere(radius=10, center=(500, 500, 72.5)), color='r')
-            _ = plotter.add_axes_at_origin()
-            # Show the plot in window
-            plotter.show(screenshot='topography.png')
-
-    def get_height_data(self):
-        """
-        get_height_data returns the height_data variable
-        :return: height_data
-        """
-        return self.height_data
+            height_data_z = height_data_z[::-1]  # Invert z array so that the image shows the correct view (If this is not done, the image will be inverted when compared to an actual map).
+            self.height_data = height_data_z  # Data for STL generator
+            self.thickness = self.input_list[4]
+            self.filename = self.input_list[5]
 
 if __name__ == "__main__":
-    wms = GetWMS(debug=True, visualize=False) # Create wms object
-    wms.dev_input() # Add the development input (Geiranger lat lon)
-    wms.calculate_width_height() # Calculate the width and height of resulting image TODO: Could be a private function to be called inside class
-    wms.calculate_height_data() # Calculate the height data
-    print(wms.get_height_data()) # Get the calculated height data for further use in stl_generator generator
+    wms = GetWMS(debug=False)  # get_wms object
+    wms.user_input()  # Provide input
+    wms.calculate()  # Calculate height data based on input
+    print(wms.height_data)
