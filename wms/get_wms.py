@@ -49,6 +49,7 @@ class GetWMS:
         resolution = int(input_list[4])  # resolution of picture width in pixels
         height = int(resolution / (input_list[2] / input_list[3]))
         width = resolution
+        print(height)
 
     def dev_input(self):
         """
@@ -73,6 +74,8 @@ class GetWMS:
         height = int(resolution / (input_list[2] / input_list[3]))
         width = resolution
 
+
+
     def __get_api_data(self):
         """
         __get_api_data makes a GET request to the Geonorge WMS API and returns the ready-made data as a "numpy image"
@@ -93,7 +96,7 @@ class GetWMS:
 
         # Make the request and store returned data in response
         print(f"[INFO]: API request sent...")
-        response = requests.get(wms_url, query_data, verify=True, timeout=100)
+        response = requests.get(wms_url, query_data, verify=True, timeout=1000)
         if (response.status_code == 200):
             print(f"[INFO]: API data received.")
 

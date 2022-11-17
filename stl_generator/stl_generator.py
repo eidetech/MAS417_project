@@ -139,7 +139,6 @@ class StlGenerator:
         for i, f in enumerate(self.top_faces):
             for j in range(3):
                 self.top_mesh.vectors[i][j] = self.top_vertices[f[j]]
-        self.top_mesh.save('top_mesh.stl')
 
     def __create_bottom_mesh(self):
         """
@@ -151,7 +150,6 @@ class StlGenerator:
         for i, f in enumerate(self.bottom_faces):
             for j in range(3):
                 self.bottom_mesh.vectors[i][j] = self.bottom_vertices[f[j]]
-        self.bottom_mesh.save('bottom_mesh.stl')
 
     def __create_side_meshes(self):
         """
@@ -182,17 +180,13 @@ class StlGenerator:
                 self.yx_mesh.vectors[i][j] = self.yx_vertices[f[j]]
                 self.yy_mesh.vectors[i][j] = self.yy_vertices[f[j]]
                 self.xy_mesh.vectors[i][j] = self.xy_vertices[f[j]]
-        self.xx_mesh.save('xx_mesh.stl')
-        self.xy_mesh.save('xy_mesh.stl')
-        self.yy_mesh.save('yy_mesh.stl')
-        self.yx_mesh.save('yx_mesh.stl')
 
     def __combine_meshes(self):
         """
         Combining top, bottom and side meshes into a single mesh and saving it in .stl format with provided filename.
         """
-        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data]))#, self.xx_mesh.data,
-                                                       #self.yx_mesh.data, self.xy_mesh.data, self.yy_mesh.data]))
+        self.combined_mesh = mesh.Mesh(np.concatenate([self.top_mesh.data, self.bottom_mesh.data, self.xx_mesh.data,
+                                                       self.yx_mesh.data, self.xy_mesh.data, self.yy_mesh.data]))
 
     def generate_stl(self, filename):
         """
@@ -209,27 +203,11 @@ class StlGenerator:
         print(f"[INFO]: Saved STL file.")
 
     def visualize(self):
-        """
-        Function for visualizing the generated STL file with pyVista
-        """
         print(f"[INFO]: Opening visualization window of generated STL.")
-        pv.set_plot_theme('document')
         plotter = pv.Plotter()
-        topmesh = pv.read('top_mesh.stl')
-        bottommesh = pv.read('bottom_mesh.stl')
-        xxmesh = pv.read('xx_mesh.stl')
-        xymesh = pv.read('xy_mesh.stl')
-        yymesh =  pv.read('yy_mesh.stl')
-        yxmesh = pv.read('yx_mesh.stl')
-        plotter.add_mesh(topmesh, show_edges=False, color=[0.6,  0.6, 1.0])
-        #plotter.add_mesh(bottommesh, show_edges=False, color=[0.7, 0.7, 1.0])
-        #plotter.add_mesh(xxmesh, show_edges=False, color=[0.7, 0.7, 1.0])
-        #plotter.add_mesh(xymesh, show_edges=False, color=[0.7, 0.7, 1.0])
-        #plotter.add_mesh(yymesh, show_edges=False, color=[0.7, 0.7, 1.0])
-        #plotter.add_mesh(yxmesh, show_edges=False, color=[0.7, 0.7, 1.0])
-        #plotter.add_axes(line_width=5, labels_off=False)
-        #plotter.add_title(self.filename)
-        plotter.camera.elevation = 2
-        #plotter.camera_position = 'yx'
-        plotter.show(screenshot='figures/top_mesh.png')
-        #plotter.show()
+        mesh = pv.read(self.filename)
+        plotter.add_mesh(mesh)
+        plotter.add_axes(line_width=5, labels_off=False)
+        plotter.add_title(self.filename)
+        plotter.camera.elevation = 20
+        plotter.show()
