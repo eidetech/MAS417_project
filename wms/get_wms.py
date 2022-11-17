@@ -95,7 +95,7 @@ class GetWMS:
             # Open the response image as binary data
             bin_img = Image.open(BytesIO(response.content))
             # Blur image to filter "noise". Makes topology surface smoother
-            blur_img = bin_img.filter(ImageFilter.BoxBlur(5))
+            blur_img = bin_img.filter(ImageFilter.BoxBlur(2))
             # Convert the blurred binary image to numpy array
             np_img = np.asarray(blur_img)
 
