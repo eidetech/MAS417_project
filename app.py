@@ -11,4 +11,4 @@ if __name__ == "__main__":
         stl.generate_stl(filename=wms.filename)  # Generate the finished .stl file
         stl.visualize()  # Visualize the generated .stl file with pyVista
     else:
-        print(f"[ERROR]: API did not respond, therefore no STL was created.")
+        print(f"      [ERROR]: API did not respond, therefore no STL was created.")
