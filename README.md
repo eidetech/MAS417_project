@@ -16,7 +16,7 @@ python app.py
 If you for some strange reason have trouble to run the software there is a Docker image on DockerHub that can be used. However this version does not vizualize the stl before saving:
 ```
 docker pull tollak/mas_417_project:stlGen
-docker run -i -t mas_417_prosject:stlGen
+docker run -i -t tollak/mas_417_prosject:stlGen
 ```
 
 When the software is running go to Google maps and find the point of interest you want to print, then copy the coordinates and paste them into the terminal.
