@@ -9,7 +9,6 @@ class StlGenerator:
     def __init__(self, height_data, thickness):
         self.height_data = height_data
         self.thickness = thickness
-        self.graph = False # For debugging purposes when naming vertices
 
         # Create a thread for each of the meshing processes
         self.mesh_threads = [thr.Thread(target=self.__create_top_mesh),
@@ -88,46 +87,6 @@ class StlGenerator:
         yx_vertices_top = self.top_vertices[-self.width:] # Selecting the last 500 elements of the top_vertices, since the top_vertices array conveniently end with the yx values (is the opposite side of xx)
         yx_vertices_bottom = [[idx[0], self.width-1, -self.thickness] for idx in yx_vertices_top] # Make bottom array with specified thickness
         self.yx_vertices = yx_vertices_top + yx_vertices_bottom # Append all bottom indexes to the top array
-
-        # Optional graphing used for understanding the orientation of each face.
-        if self.graph:
-            xxplot = pv.Chart2D()
-            xx = [idx[2] for idx in xx_vertices_top]
-            xx = xx[::-1]
-            xxplot.plot(xx)
-
-            xyplot = pv.Chart2D()
-            xy = [idx[2] for idx in xy_vertices_top]
-            xyplot.plot(xy)
-
-            yxplot = pv.Chart2D()
-            yx = [idx[2] for idx in yx_vertices_top]
-            yx = yx[::-1]
-            yxplot.plot(yx)
-
-            yyplot = pv.Chart2D()
-            yy = [idx[2] for idx in yy_vertices_top]
-            yy = yy[::-1]
-            yyplot.plot(yy)
-
-            pl = pv.Plotter(shape=(2, 2))
-            pl.subplot(0, 0)
-            pl.add_chart(xxplot)
-            pl.add_title("xx plot", color='black')
-            pl.set_background('white', all_renderers=False)
-            pl.subplot(0, 1)
-            pl.add_chart(xyplot)
-            pl.add_title("xy plot", color='black')
-            pl.set_background('white', all_renderers=False)
-            pl.subplot(1, 0)
-            pl.add_chart(yxplot)
-            pl.add_title("yx plot", color='black')
-            pl.set_background('white', all_renderers=False)
-            pl.subplot(1, 1)
-            pl.add_chart(yyplot)
-            pl.add_title("yy plot", color='black')
-            pl.set_background('white', all_renderers=False)
-            pl.show()
 
     def __create_top_mesh(self):
         """
