@@ -54,7 +54,7 @@ class GetWMS:
         self.input_list = list(input("      lat, lon, size, scale factor, print thickness, filename.stl: ").strip().split(','))[:n]
         print(Style.RESET_ALL, file=stream)
         deg2meter_list = [40000 * 2, 90000 * 2]
-        # Convert the 7 first input entries to float numbers
+        # Convert the 5 first input entries to float numbers
         for i in range(5):
             self.input_list[i] = float(self.input_list[i])
 
