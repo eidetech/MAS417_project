@@ -51,7 +51,7 @@ class GetWMS:
 
         print("      Enter the following values, separated by comma:", Fore.WHITE, file=stream)
         n = 6  # number of input_list elements
-        self.input_list = list(input("      lat, lon, size, scale factor, print thickness, filename.stl: ").strip().split(','))[:n]
+        self.input_list = list(input("      lon, lat, size, scale factor, print thickness, filename.stl: ").strip().split(','))[:n]
         print(Style.RESET_ALL, file=stream)
         deg2meter_list = [40000 * 2, 90000 * 2]
         # Convert the 5 first input entries to float numbers
